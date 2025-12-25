@@ -16,8 +16,8 @@ INPUT_DIR = "data/input"
 OUTPUT_DIR = "data/output"
 
 
-def process_single_image(task):
-    img_path, output_path = task
+def process_single_image(args):
+    img_path, output_path = args
 
     img = Image.open(img_path).convert("RGB")
     img_np = np.array(img)
@@ -47,17 +47,30 @@ def get_all_image_tasks():
 def run_experiment(num_processes):
     tasks = get_all_image_tasks()
 
-    print(f"\nProcesses: {num_processes}")
-    print(f"Total images detected: {len(tasks)}")
-
     start = time.time()
     with Pool(processes=num_processes) as pool:
         pool.map(process_single_image, tasks)
     end = time.time()
 
-    print(f"Execution time: {end - start:.2f} seconds")
+    return end - start, len(tasks)
 
 
 if __name__ == "__main__":
-    for p in [1, 2, 4]:
-        run_experiment(p)
+    process_counts = [1, 2, 4]
+    baseline_time = None
+
+    print("Workers (P) | Execution time | Speed-up | Efficiency")
+    print("-" * 55)
+
+    for p in process_counts:
+        exec_time, total_images = run_experiment(p)
+
+        if p == 1:
+            baseline_time = exec_time
+            speedup = 1.0
+            efficiency = 1.0
+        else:
+            speedup = baseline_time / exec_time
+            efficiency = speedup / p
+
+        print(f"{p:<11} | {exec_time:.4f} s      | {speedup:.4f} | {efficiency*100:.2f}%")
